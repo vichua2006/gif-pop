@@ -30,10 +30,12 @@ const Index = () => {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm border-b-chunky border-border">
         <div className="container max-w-5xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="font-display text-3xl md:text-4xl text-foreground">
-              GIF Stash 📦
-            </h1>
+        <div className="flex items-center justify-between">
+            <div className="bg-secondary border-[3px] border-border rounded-lg px-4 py-2 shadow-[4px_4px_0px_hsl(var(--border))]">
+              <h1 className="font-display text-2xl md:text-3xl text-secondary-foreground">
+                GIF Stash
+              </h1>
+            </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
