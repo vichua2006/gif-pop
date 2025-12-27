@@ -28,39 +28,32 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm border-b-chunky border-border">
-        <div className="container max-w-5xl mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-            <div className="bg-secondary border-[3px] border-border rounded-lg px-4 py-2 shadow-[4px_4px_0px_hsl(var(--border))]">
-              <h1 className="font-display text-2xl md:text-3xl text-secondary-foreground">
-                GIF Stash
-              </h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsSearchOpen(true)}
-                className="hidden sm:flex"
-              >
-                <Search size={18} />
-                Search
-                <kbd className="ml-2 flex items-center gap-0.5 text-xs bg-muted px-1.5 py-0.5 rounded border border-border">
-                  <Command size={10} />K
-                </kbd>
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setIsSearchOpen(true)}
-                className="sm:hidden"
-              >
-                <Search size={18} />
-              </Button>
-              <Button onClick={() => setIsAddDialogOpen(true)}>
-                <Plus size={18} />
-                <span className="hidden sm:inline">Add GIF</span>
-              </Button>
-            </div>
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm border-b-[3px] border-border">
+        <div className="container max-w-5xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsSearchOpen(true)}
+              className="hidden sm:flex"
+            >
+              <Search size={18} />
+              Search
+              <kbd className="ml-2 flex items-center gap-0.5 text-xs bg-muted px-1.5 py-0.5 rounded border border-border">
+                <Command size={10} />K
+              </kbd>
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setIsSearchOpen(true)}
+              className="sm:hidden"
+            >
+              <Search size={18} />
+            </Button>
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              <Plus size={18} />
+              <span className="hidden sm:inline">Add GIF</span>
+            </Button>
           </div>
         </div>
       </header>
