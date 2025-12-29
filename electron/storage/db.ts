@@ -1,169 +1,145 @@
-import Database from 'better-sqlite3';
 import * as path from 'path';
+import * as fs from 'fs';
 import { app } from 'electron';
 import type { GifRow, TagRow, GifTagRow } from '../types';
 
-let db: Database.Database | null = null;
-
-export function getDbPath(): string {
-  const userDataPath = app.getPath('userData');
-  return path.join(userDataPath, 'gif-stash.db');
+// Simple JSON-based storage (no native compilation needed)
+interface DatabaseSchema {
+  gifs: GifRow[];
+  tags: TagRow[];
+  gifTags: GifTagRow[];
+  nextTagId: number;
 }
 
-export function getDatabase(): Database.Database {
-  if (!db) {
-    throw new Error('Database not initialized. Call initDatabase() first.');
+let data: DatabaseSchema = {
+  gifs: [],
+  tags: [],
+  gifTags: [],
+  nextTagId: 1
+};
+
+let dbPath: string = '';
+
+export function getDbPath(): string {
+  if (!dbPath) {
+    const userDataPath = app.getPath('userData');
+    dbPath = path.join(userDataPath, 'gif-stash.json');
   }
-  return db;
+  return dbPath;
+}
+
+function saveDatabase(): void {
+  fs.writeFileSync(getDbPath(), JSON.stringify(data, null, 2), 'utf-8');
+}
+
+function loadDatabase(): void {
+  const filePath = getDbPath();
+  if (fs.existsSync(filePath)) {
+    try {
+      const raw = fs.readFileSync(filePath, 'utf-8');
+      data = JSON.parse(raw);
+    } catch (e) {
+      console.error('Failed to load database, starting fresh:', e);
+      data = { gifs: [], tags: [], gifTags: [], nextTagId: 1 };
+    }
+  }
 }
 
 export function initDatabase(): void {
-  const dbPath = getDbPath();
-  db = new Database(dbPath);
-  
-  // Enable foreign keys
-  db.pragma('foreign_keys = ON');
-  
-  // Create tables
-  db.exec(`
-    -- Main GIF metadata table
-    CREATE TABLE IF NOT EXISTS gifs (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      created_at INTEGER NOT NULL,
-      is_favorite INTEGER DEFAULT 0
-    );
-    
-    -- Tag definitions
-    CREATE TABLE IF NOT EXISTS tags (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL UNIQUE
-    );
-    
-    -- Many-to-many relationship
-    CREATE TABLE IF NOT EXISTS gif_tags (
-      gif_id TEXT NOT NULL,
-      tag_id INTEGER NOT NULL,
-      PRIMARY KEY (gif_id, tag_id),
-      FOREIGN KEY (gif_id) REFERENCES gifs(id) ON DELETE CASCADE,
-      FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
-    );
-    
-    -- Indexes for performance
-    CREATE INDEX IF NOT EXISTS idx_gifs_created_at ON gifs(created_at DESC);
-    CREATE INDEX IF NOT EXISTS idx_gifs_name ON gifs(name);
-    CREATE INDEX IF NOT EXISTS idx_gifs_is_favorite ON gifs(is_favorite);
-    CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name);
-  `);
-  
-  console.log('Database initialized at:', dbPath);
+  loadDatabase();
+  console.log('Database initialized at:', getDbPath());
 }
 
 // GIF operations
 export function insertGif(gif: Omit<GifRow, 'is_favorite'> & { is_favorite?: number }): void {
-  const stmt = getDatabase().prepare(`
-    INSERT INTO gifs (id, name, created_at, is_favorite)
-    VALUES (?, ?, ?, ?)
-  `);
-  stmt.run(gif.id, gif.name, gif.created_at, gif.is_favorite ?? 0);
+  data.gifs.push({
+    id: gif.id,
+    name: gif.name,
+    created_at: gif.created_at,
+    is_favorite: gif.is_favorite ?? 0
+  });
+  saveDatabase();
 }
 
 export function getGifById(id: string): GifRow | undefined {
-  const stmt = getDatabase().prepare('SELECT * FROM gifs WHERE id = ?');
-  return stmt.get(id) as GifRow | undefined;
+  return data.gifs.find(g => g.id === id);
 }
 
 export function getAllGifs(): GifRow[] {
-  const stmt = getDatabase().prepare('SELECT * FROM gifs ORDER BY created_at DESC');
-  return stmt.all() as GifRow[];
+  return [...data.gifs].sort((a, b) => b.created_at - a.created_at);
 }
 
 export function updateGif(id: string, updates: { name?: string; is_favorite?: number }): void {
-  const fields: string[] = [];
-  const values: (string | number)[] = [];
-  
-  if (updates.name !== undefined) {
-    fields.push('name = ?');
-    values.push(updates.name);
+  const gif = data.gifs.find(g => g.id === id);
+  if (gif) {
+    if (updates.name !== undefined) gif.name = updates.name;
+    if (updates.is_favorite !== undefined) gif.is_favorite = updates.is_favorite;
+    saveDatabase();
   }
-  if (updates.is_favorite !== undefined) {
-    fields.push('is_favorite = ?');
-    values.push(updates.is_favorite);
-  }
-  
-  if (fields.length === 0) return;
-  
-  values.push(id);
-  const stmt = getDatabase().prepare(`UPDATE gifs SET ${fields.join(', ')} WHERE id = ?`);
-  stmt.run(...values);
 }
 
 export function deleteGif(id: string): void {
-  const stmt = getDatabase().prepare('DELETE FROM gifs WHERE id = ?');
-  stmt.run(id);
+  data.gifs = data.gifs.filter(g => g.id !== id);
+  data.gifTags = data.gifTags.filter(gt => gt.gif_id !== id);
+  saveDatabase();
 }
 
 export function searchGifs(query: string): GifRow[] {
-  const stmt = getDatabase().prepare(`
-    SELECT * FROM gifs 
-    WHERE name LIKE ? 
-    ORDER BY created_at DESC
-  `);
-  return stmt.all(`%${query}%`) as GifRow[];
+  const lowerQuery = query.toLowerCase();
+  return data.gifs
+    .filter(g => g.name.toLowerCase().includes(lowerQuery))
+    .sort((a, b) => b.created_at - a.created_at);
 }
 
 // Tag operations
 export function insertTag(name: string): TagRow {
-  const stmt = getDatabase().prepare('INSERT INTO tags (name) VALUES (?)');
-  const result = stmt.run(name);
-  return { id: result.lastInsertRowid as number, name };
+  const tag: TagRow = { id: data.nextTagId++, name };
+  data.tags.push(tag);
+  saveDatabase();
+  return tag;
 }
 
 export function getAllTags(): TagRow[] {
-  const stmt = getDatabase().prepare('SELECT * FROM tags ORDER BY name');
-  return stmt.all() as TagRow[];
+  return [...data.tags].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function getTagById(id: number): TagRow | undefined {
-  const stmt = getDatabase().prepare('SELECT * FROM tags WHERE id = ?');
-  return stmt.get(id) as TagRow | undefined;
+  return data.tags.find(t => t.id === id);
 }
 
 export function updateTag(id: number, name: string): void {
-  const stmt = getDatabase().prepare('UPDATE tags SET name = ? WHERE id = ?');
-  stmt.run(name, id);
+  const tag = data.tags.find(t => t.id === id);
+  if (tag) {
+    tag.name = name;
+    saveDatabase();
+  }
 }
 
 export function deleteTag(id: number): void {
-  const stmt = getDatabase().prepare('DELETE FROM tags WHERE id = ?');
-  stmt.run(id);
+  data.tags = data.tags.filter(t => t.id !== id);
+  data.gifTags = data.gifTags.filter(gt => gt.tag_id !== id);
+  saveDatabase();
 }
 
 // GIF-Tag relationship operations
 export function addTagToGif(gifId: string, tagId: number): void {
-  const stmt = getDatabase().prepare(`
-    INSERT OR IGNORE INTO gif_tags (gif_id, tag_id) VALUES (?, ?)
-  `);
-  stmt.run(gifId, tagId);
+  const exists = data.gifTags.some(gt => gt.gif_id === gifId && gt.tag_id === tagId);
+  if (!exists) {
+    data.gifTags.push({ gif_id: gifId, tag_id: tagId });
+    saveDatabase();
+  }
 }
 
 export function removeTagFromGif(gifId: string, tagId: number): void {
-  const stmt = getDatabase().prepare('DELETE FROM gif_tags WHERE gif_id = ? AND tag_id = ?');
-  stmt.run(gifId, tagId);
+  data.gifTags = data.gifTags.filter(gt => !(gt.gif_id === gifId && gt.tag_id === tagId));
+  saveDatabase();
 }
 
 export function getTagsForGif(gifId: string): TagRow[] {
-  const stmt = getDatabase().prepare(`
-    SELECT t.* FROM tags t
-    JOIN gif_tags gt ON gt.tag_id = t.id
-    WHERE gt.gif_id = ?
-    ORDER BY t.name
-  `);
-  return stmt.all(gifId) as TagRow[];
+  const tagIds = data.gifTags.filter(gt => gt.gif_id === gifId).map(gt => gt.tag_id);
+  return data.tags.filter(t => tagIds.includes(t.id)).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function getGifIdsByTag(tagId: number): string[] {
-  const stmt = getDatabase().prepare('SELECT gif_id FROM gif_tags WHERE tag_id = ?');
-  const rows = stmt.all(tagId) as GifTagRow[];
-  return rows.map(row => row.gif_id);
+  return data.gifTags.filter(gt => gt.tag_id === tagId).map(gt => gt.gif_id);
 }
