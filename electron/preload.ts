@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { GifItemWithTags, TagItem, CreateGifInput } from './types';
+import type { GifItemWithTags, TagItem, CreateGifInput } from './types.js';
 
 // Expose protected methods to the renderer process
 contextBridge.exposeInMainWorld('api', {

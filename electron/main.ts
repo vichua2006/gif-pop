@@ -1,9 +1,15 @@
 import { app, BrowserWindow, globalShortcut, ipcMain, Tray, Menu, nativeImage } from 'electron';
 import * as path from 'path';
-import { initDatabase } from './storage/db';
-import { ensureGifDirectory } from './storage/files';
-import { registerGifHandlers } from './ipc/gifHandlers';
-import { registerTagHandlers } from './ipc/tagHandlers';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import { initDatabase } from './storage/db.js';
+import { ensureGifDirectory } from './storage/files.js';
+import { registerGifHandlers } from './ipc/gifHandlers.js';
+import { registerTagHandlers } from './ipc/tagHandlers.js';
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -46,35 +52,55 @@ function createSearchPopup() {
     mainWindow.webContents.send('open-search-popup');
   } else {
     createWindow();
-    mainWindow?.webContents.once('did-finish-load', () => {
+    // We know mainWindow is set after createWindow(), so we can use non-null assertion
+    mainWindow!.webContents.once('did-finish-load', () => {
       mainWindow?.webContents.send('open-search-popup');
     });
   }
 }
 
 function createTray() {
-  // Create a simple tray icon (you can replace with actual icon)
-  const icon = nativeImage.createEmpty();
-  tray = new Tray(icon);
-  
-  const contextMenu = Menu.buildFromTemplate([
-    { label: 'Open GIF Stash', click: () => mainWindow?.show() },
-    { label: 'Quick Search', accelerator: 'CmdOrCtrl+Shift+G', click: createSearchPopup },
-    { type: 'separator' },
-    { label: 'Quit', click: () => app.quit() },
-  ]);
-  
-  tray.setToolTip('GIF Stash');
-  tray.setContextMenu(contextMenu);
-  
-  tray.on('click', () => {
-    mainWindow?.show();
-  });
+  try {
+    // Create a 16x16 transparent icon (required for Linux)
+    const icon = nativeImage.createFromBuffer(
+      Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAADklEQVQ4jWNgGAWjAAMAAA' +
+        'QAAQZEJqUAAAAASUVORK5CYII=',
+        'base64'
+      )
+    );
+    tray = new Tray(icon);
+    
+    const contextMenu = Menu.buildFromTemplate([
+      { label: 'Open GIF Stash', click: () => mainWindow?.show() },
+      { label: 'Quick Search', accelerator: 'CmdOrCtrl+Shift+G', click: createSearchPopup },
+      { type: 'separator' },
+      { label: 'Quit', click: () => app.quit() },
+    ]);
+    
+    tray.setToolTip('GIF Stash');
+    tray.setContextMenu(contextMenu);
+    
+    tray.on('click', () => {
+      mainWindow?.show();
+    });
+  } catch (error) {
+    console.error('Failed to create tray:', error);
+    // Continue without tray - not critical
+  }
 }
 
 function registerGlobalShortcuts() {
-  // Global shortcut to open search popup from anywhere
-  globalShortcut.register('CmdOrCtrl+Shift+G', createSearchPopup);
+  try {
+    // Global shortcut to open search popup from anywhere
+    const registered = globalShortcut.register('CmdOrCtrl+Shift+G', createSearchPopup);
+    if (!registered) {
+      console.warn('Failed to register global shortcut CmdOrCtrl+Shift+G');
+    }
+  } catch (error) {
+    console.error('Failed to register global shortcuts:', error);
+    // Continue without shortcuts - not critical
+  }
 }
 
 async function initialize() {
@@ -90,16 +116,21 @@ async function initialize() {
 }
 
 app.whenReady().then(async () => {
-  await initialize();
-  createWindow();
-  createTray();
-  registerGlobalShortcuts();
+  try {
+    await initialize();
+    createWindow();
+    createTray();
+    registerGlobalShortcuts();
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+      }
+    });
+  } catch (error) {
+    console.error('Failed to initialize app:', error);
+    app.quit();
+  }
 });
 
 app.on('window-all-closed', () => {

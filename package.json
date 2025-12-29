@@ -3,12 +3,16 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron:compile": "tsc -p electron/tsconfig.json",
+    "electron:dev": "npm run build && npm run electron:compile && electron .",
+    "electron:build": "npm run build && npm run electron:compile && electron-builder"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -44,6 +48,8 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^3.6.0",
+    "electron": "^39.2.7",
+    "electron-builder": "^26.0.12",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",

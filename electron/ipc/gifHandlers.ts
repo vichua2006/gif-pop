@@ -1,9 +1,9 @@
 import type { IpcMain } from 'electron';
-import type { GifItemWithTags, CreateGifInput } from '../types';
-import * as db from '../storage/db';
-import * as files from '../storage/files';
+import type { GifItemWithTags, CreateGifInput, GifRow } from '../types.js';
+import * as db from '../storage/db.js';
+import * as files from '../storage/files.js';
 
-function mapGifRowToGifWithTags(row: db.GifRow): GifItemWithTags {
+function mapGifRowToGifWithTags(row: GifRow): GifItemWithTags {
   const tags = db.getTagsForGif(row.id);
   return {
     id: row.id,
@@ -116,7 +116,7 @@ export function registerGifHandlers(ipcMain: IpcMain): void {
     const gifIds = db.getGifIdsByTag(tagId);
     return gifIds
       .map(id => db.getGifById(id))
-      .filter((row): row is db.GifRow => row !== undefined)
+      .filter((row): row is GifRow => row !== undefined)
       .map(mapGifRowToGifWithTags);
   });
 }

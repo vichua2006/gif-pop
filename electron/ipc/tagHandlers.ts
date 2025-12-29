@@ -1,6 +1,6 @@
 import type { IpcMain } from 'electron';
-import type { TagItem } from '../types';
-import * as db from '../storage/db';
+import type { TagItem } from '../types.js';
+import * as db from '../storage/db.js';
 
 export function registerTagHandlers(ipcMain: IpcMain): void {
   // Get all tags

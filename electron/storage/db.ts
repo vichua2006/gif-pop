@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { app } from 'electron';
-import type { GifRow, TagRow, GifTagRow } from '../types';
+import type { GifRow, TagRow, GifTagRow } from '../types.js';
 
 // Simple JSON-based storage (no native compilation needed)
 interface DatabaseSchema {
