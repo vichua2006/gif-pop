@@ -108,8 +108,8 @@ export function registerGifHandlers(ipcMain) {
             // On Windows, use PowerShell to copy the file to clipboard (like Ctrl+C on a file)
             if (process.platform === 'win32') {
                 return new Promise((resolve, reject) => {
-                    // PowerShell command to copy file to clipboard
-                    const psCommand = `Set-Clipboard -Path "${filePath.replace(/\\/g, '\\\\')}"`;
+                    // PowerShell command to copy file to clipboard - use single quotes for path with spaces
+                    const psCommand = `Set-Clipboard -Path '${filePath.replace(/'/g, "''")}'`;
                     exec(`powershell -command "${psCommand}"`, (error) => {
                         if (error) {
                             console.error('PowerShell copy failed:', error);

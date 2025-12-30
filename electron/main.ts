@@ -12,6 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 let mainWindow: BrowserWindow | null = null;
+let searchWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
 
@@ -54,18 +55,51 @@ function createWindow() {
 }
 
 function createSearchPopup() {
-  // Reuse main window but trigger search mode
-  if (mainWindow) {
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.focus();
-    mainWindow.webContents.send('open-search-popup');
+  // If search window already exists, just focus it
+  if (searchWindow && !searchWindow.isDestroyed()) {
+    searchWindow.focus();
+    return;
+  }
+
+  // Create a dedicated frameless popup window for quick search
+  searchWindow = new BrowserWindow({
+    width: 420,
+    height: 340,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  // Load the same app but with a hash route for search mode
+  if (isDev) {
+    searchWindow.loadURL('http://localhost:5173/#/search-popup');
   } else {
-    createWindow();
-    // We know mainWindow is set after createWindow(), so we can use non-null assertion
-    mainWindow!.webContents.once('did-finish-load', () => {
-      mainWindow?.webContents.send('open-search-popup');
+    searchWindow.loadFile(path.join(__dirname, '../dist/index.html'), {
+      hash: '/search-popup'
     });
   }
+
+  searchWindow.once('ready-to-show', () => {
+    searchWindow?.show();
+    searchWindow?.focus();
+  });
+
+  // Close on blur (when clicking outside)
+  searchWindow.on('blur', () => {
+    searchWindow?.close();
+  });
+
+  searchWindow.on('closed', () => {
+    searchWindow = null;
+  });
 }
 
 function createTray() {
@@ -125,6 +159,12 @@ async function initialize() {
   // Register IPC handlers
   registerGifHandlers(ipcMain);
   registerTagHandlers(ipcMain);
+  
+  // Window control handler
+  ipcMain.handle('window:close', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    win?.close();
+  });
 }
 
 app.whenReady().then(async () => {

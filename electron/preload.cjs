@@ -26,5 +26,8 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('open-search-popup', callback);
     return () => ipcRenderer.removeListener('open-search-popup', callback);
   },
+  
+  // Window control
+  closeWindow: () => ipcRenderer.invoke('window:close'),
 });
 

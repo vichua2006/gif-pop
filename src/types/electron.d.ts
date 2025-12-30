@@ -25,6 +25,9 @@ declare global {
       
       // Events
       onOpenSearchPopup: (callback: () => void) => () => void;
+      
+      // Window control
+      closeWindow: () => Promise<void>;
     };
   }
 }
