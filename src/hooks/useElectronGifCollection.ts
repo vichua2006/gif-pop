@@ -37,9 +37,16 @@ export function useElectronGifCollection() {
 
   // GIF operations
   const addGif = useCallback(async (input: CreateGifInput): Promise<GifItemWithTags> => {
-    const newGif = await window.api.addGif(input);
-    setGifs(prev => [newGif, ...prev]);
-    return newGif;
+    console.log('addGif called with:', { name: input.name, sourceType: input.sourceType });
+    try {
+      const newGif = await window.api.addGif(input);
+      console.log('addGif succeeded:', newGif);
+      setGifs(prev => [newGif, ...prev]);
+      return newGif;
+    } catch (error) {
+      console.error('addGif failed:', error);
+      throw error;
+    }
   }, []);
 
   const removeGif = useCallback(async (id: string): Promise<void> => {

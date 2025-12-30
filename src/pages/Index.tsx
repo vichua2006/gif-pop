@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Command } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useGifCollection } from '@/hooks/useGifCollection';
+import { useElectronGifCollection } from '@/hooks/useElectronGifCollection';
 import { AddGifDialog } from '@/components/AddGifDialog';
 import { GifCard } from '@/components/GifCard';
 import { SearchPopup } from '@/components/SearchPopup';
 import { EmptyState } from '@/components/EmptyState';
 
 const Index = () => {
-  const { gifs, addGif, removeGif, updateGifName, searchGifs } = useGifCollection();
+  const { gifs, addGif, removeGif, updateGifName, searchGifs, isElectron, isLoading } = useElectronGifCollection();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
@@ -100,7 +100,7 @@ const Index = () => {
       <AddGifDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
-        onAdd={addGif}
+        onAdd={(name, dataUrl) => addGif({ name, sourceData: dataUrl, sourceType: 'dataUrl' })}
       />
 
       <SearchPopup

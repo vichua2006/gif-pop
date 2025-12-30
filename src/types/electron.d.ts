@@ -12,6 +12,7 @@ declare global {
       deleteGif: (id: string) => Promise<void>;
       searchGifs: (query: string) => Promise<GifItemWithTags[]>;
       getGifPath: (id: string) => Promise<string>;
+      copyGifToClipboard: (id: string) => Promise<{ success: boolean; method: string }>;
       
       // Tag operations
       getTags: () => Promise<TagItem[]>;

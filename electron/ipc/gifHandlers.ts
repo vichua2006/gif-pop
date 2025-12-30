@@ -1,7 +1,10 @@
 import type { IpcMain } from 'electron';
+import { clipboard, nativeImage } from 'electron';
 import type { GifItemWithTags, CreateGifInput, GifRow } from '../types.js';
 import * as db from '../storage/db.js';
 import * as files from '../storage/files.js';
+import * as fs from 'fs';
+import { exec } from 'child_process';
 
 function mapGifRowToGifWithTags(row: GifRow): GifItemWithTags {
   const tags = db.getTagsForGif(row.id);
@@ -31,30 +34,46 @@ export function registerGifHandlers(ipcMain: IpcMain): void {
 
   // Add new GIF
   ipcMain.handle('gif:add', async (_, input: CreateGifInput): Promise<GifItemWithTags> => {
-    let id: string;
+    console.log('gif:add called with:', { name: input.name, sourceType: input.sourceType, dataLength: input.sourceData?.length });
     
-    // Determine source type and save file accordingly
-    if (input.sourceType === 'file' || !input.sourceData.startsWith('data:')) {
-      id = await files.saveGifFromPath(input.sourceData);
-    } else {
-      id = await files.saveGifFromDataUrl(input.sourceData);
+    try {
+      let id: string;
+      
+      // Determine source type and save file accordingly
+      if (input.sourceType === 'file' || !input.sourceData.startsWith('data:')) {
+        console.log('Saving from file path...');
+        id = await files.saveGifFromPath(input.sourceData);
+      } else {
+        console.log('Saving from data URL...');
+        id = await files.saveGifFromDataUrl(input.sourceData);
+      }
+      
+      console.log('File saved with id:', id);
+      
+      const now = Date.now();
+      db.insertGif({
+        id,
+        name: input.name.trim(),
+        created_at: now,
+      });
+      
+      console.log('Database entry created');
+      
+      const result = {
+        id,
+        name: input.name.trim(),
+        createdAt: now,
+        isFavorite: false,
+        tags: [],
+        filePath: files.getGifFileUrl(id),
+      };
+      
+      console.log('Returning:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in gif:add:', error);
+      throw error;
     }
-    
-    const now = Date.now();
-    db.insertGif({
-      id,
-      name: input.name.trim(),
-      created_at: now,
-    });
-    
-    return {
-      id,
-      name: input.name.trim(),
-      createdAt: now,
-      isFavorite: false,
-      tags: [],
-      filePath: files.getGifFileUrl(id),
-    };
   });
 
   // Update GIF
@@ -99,6 +118,54 @@ export function registerGifHandlers(ipcMain: IpcMain): void {
   // Get GIF file path
   ipcMain.handle('gif:getPath', async (_, id: string): Promise<string> => {
     return files.getGifFilePath(id);
+  });
+
+  // Copy GIF to clipboard using native Electron clipboard
+  ipcMain.handle('gif:copyToClipboard', async (_, id: string): Promise<{ success: boolean; method: string }> => {
+    const filePath = files.getGifFilePath(id);
+    
+    try {
+      // On Windows, use PowerShell to copy the file to clipboard (like Ctrl+C on a file)
+      if (process.platform === 'win32') {
+        return new Promise((resolve, reject) => {
+          // PowerShell command to copy file to clipboard
+          const psCommand = `Set-Clipboard -Path "${filePath.replace(/\\/g, '\\\\')}"`;
+          exec(`powershell -command "${psCommand}"`, (error) => {
+            if (error) {
+              console.error('PowerShell copy failed:', error);
+              // Fallback to image copy
+              const imageBuffer = fs.readFileSync(filePath);
+              const image = nativeImage.createFromBuffer(imageBuffer);
+              if (!image.isEmpty()) {
+                clipboard.writeImage(image);
+                resolve({ success: true, method: 'image' });
+              } else {
+                reject(error);
+              }
+            } else {
+              console.log('File copied to clipboard via PowerShell');
+              resolve({ success: true, method: 'file' });
+            }
+          });
+        });
+      }
+      
+      // On other platforms, fall back to image copy
+      const imageBuffer = fs.readFileSync(filePath);
+      const image = nativeImage.createFromBuffer(imageBuffer);
+      
+      if (!image.isEmpty()) {
+        clipboard.writeImage(image);
+        return { success: true, method: 'image' };
+      }
+      
+      // Last resort: write the file path as text
+      clipboard.writeText(filePath);
+      return { success: true, method: 'path' };
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      throw error;
+    }
   });
 
   // Add tag to GIF

@@ -11,6 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 let mainWindow = null;
 let tray = null;
+let isQuitting = false;
 const isDev = process.env.NODE_ENV === 'development';
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -18,7 +19,7 @@ function createWindow() {
         height: 600,
         show: false,
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
+            preload: path.join(__dirname, 'preload.cjs'),
             contextIsolation: true,
             nodeIntegration: false,
         },
@@ -32,6 +33,13 @@ function createWindow() {
     }
     mainWindow.on('ready-to-show', () => {
         mainWindow?.show();
+    });
+    // Hide to tray instead of closing (for background running)
+    mainWindow.on('close', (event) => {
+        if (!isQuitting) {
+            event.preventDefault();
+            mainWindow?.hide();
+        }
     });
     mainWindow.on('closed', () => {
         mainWindow = null;
@@ -63,7 +71,10 @@ function createTray() {
             { label: 'Open GIF Stash', click: () => mainWindow?.show() },
             { label: 'Quick Search', accelerator: 'CmdOrCtrl+Shift+G', click: createSearchPopup },
             { type: 'separator' },
-            { label: 'Quit', click: () => app.quit() },
+            { label: 'Quit', click: () => {
+                    isQuitting = true;
+                    app.quit();
+                } },
         ]);
         tray.setToolTip('GIF Stash');
         tray.setContextMenu(contextMenu);
@@ -116,9 +127,8 @@ app.whenReady().then(async () => {
     }
 });
 app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-        app.quit();
-    }
+    // Don't quit - keep running in system tray
+    // App will only quit when user clicks "Quit" in tray menu
 });
 app.on('will-quit', () => {
     globalShortcut.unregisterAll();

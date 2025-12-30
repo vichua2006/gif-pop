@@ -1,16 +1,19 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "gif-pop",
+  "productName": "GIF Pop",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "A GIF collection manager with quick search",
   "type": "module",
   "main": "dist-electron/main.js",
+  "author": "You",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "electron:compile": "tsc -p electron/tsconfig.json",
+    "electron:compile": "tsc -p electron/tsconfig.json && cp electron/preload.cjs dist-electron/preload.cjs",
     "electron:dev": "npm run build && npm run electron:compile && electron .",
     "electron:build": "npm run build && npm run electron:compile && electron-builder"
   },
@@ -85,5 +88,26 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
     "vite": "^5.4.19"
+  },
+  "build": {
+    "appId": "com.gifpop.app",
+    "productName": "GIF Pop",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "win": {
+      "target": ["nsis"],
+      "icon": "public/favicon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }

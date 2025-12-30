@@ -1,21 +1,29 @@
 import { useState, useEffect, useRef } from 'react';
-import { GifItem } from '@/types/gif';
+import type { GifItemWithTags } from '../../electron/types';
 import { Search, Command } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SearchPopupProps {
   isOpen: boolean;
   onClose: () => void;
-  gifs: GifItem[];
-  searchGifs: (query: string) => GifItem[];
+  gifs: GifItemWithTags[];
+  searchGifs: (query: string) => Promise<GifItemWithTags[]>;
 }
 
 export function SearchPopup({ isOpen, onClose, gifs, searchGifs }: SearchPopupProps) {
   const [query, setQuery] = useState('');
+  const [results, setResults] = useState<GifItemWithTags[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const results = query.trim() ? searchGifs(query) : gifs.slice(0, 8);
+  // Update results when query or gifs change
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults(gifs.slice(0, 8));
+    } else {
+      searchGifs(query).then(setResults);
+    }
+  }, [query, gifs, searchGifs]);
 
   useEffect(() => {
     if (isOpen) {
@@ -29,16 +37,25 @@ export function SearchPopup({ isOpen, onClose, gifs, searchGifs }: SearchPopupPr
     setSelectedIndex(0);
   }, [query]);
 
-  const handleSelect = async (gif: GifItem) => {
+  const handleSelect = async (gif: GifItemWithTags) => {
     try {
-      const response = await fetch(gif.dataUrl);
-      const blob = await response.blob();
-      await navigator.clipboard.write([
-        new ClipboardItem({ [blob.type]: blob }),
-      ]);
-      toast.success(`${gif.name} copied!`);
-      onClose();
-    } catch {
+      // Use native Electron clipboard for better GIF support
+      if (window.api?.copyGifToClipboard) {
+        await window.api.copyGifToClipboard(gif.id);
+        toast.success(`${gif.name} copied!`);
+        onClose();
+      } else {
+        // Fallback for non-Electron
+        const response = await fetch(gif.filePath);
+        const blob = await response.blob();
+        await navigator.clipboard.write([
+          new ClipboardItem({ [blob.type]: blob }),
+        ]);
+        toast.success(`${gif.name} copied!`);
+        onClose();
+      }
+    } catch (err) {
+      console.error('Copy failed:', err);
       toast.error('Failed to copy');
     }
   };
@@ -106,7 +123,7 @@ export function SearchPopup({ isOpen, onClose, gifs, searchGifs }: SearchPopupPr
                   }`}
                 >
                   <img
-                    src={gif.dataUrl}
+                    src={gif.filePath}
                     alt={gif.name}
                     className="w-full h-full object-contain"
                   />

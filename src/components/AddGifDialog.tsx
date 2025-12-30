@@ -2,18 +2,20 @@ import { useState, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Upload, Image, X } from 'lucide-react';
+import { Upload, Image, X, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface AddGifDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (name: string, dataUrl: string) => void;
+  onAdd: (name: string, dataUrl: string) => Promise<unknown> | void;
 }
 
 export function AddGifDialog({ open, onOpenChange, onAdd }: AddGifDialogProps) {
   const [name, setName] = useState('');
   const [preview, setPreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback((file: File) => {
@@ -41,10 +43,21 @@ export function AddGifDialog({ open, onOpenChange, onAdd }: AddGifDialogProps) {
     [handleFile]
   );
 
-  const handleSubmit = () => {
-    if (!name.trim() || !preview) return;
-    onAdd(name, preview);
-    handleClose();
+  const handleSubmit = async () => {
+    if (!name.trim() || !preview || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      console.log('Submitting GIF:', { name, previewLength: preview.length });
+      await onAdd(name, preview);
+      toast.success('GIF added successfully!');
+      handleClose();
+    } catch (error) {
+      console.error('Failed to add GIF:', error);
+      toast.error('Failed to add GIF. Check console for details.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
@@ -135,16 +148,20 @@ export function AddGifDialog({ open, onOpenChange, onAdd }: AddGifDialogProps) {
 
           {/* Actions */}
           <div className="flex gap-3 pt-2">
-            <Button variant="outline" onClick={handleClose} className="flex-1">
+            <Button variant="outline" onClick={handleClose} className="flex-1" disabled={isSubmitting}>
               Cancel
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={!name.trim() || !preview}
+              disabled={!name.trim() || !preview || isSubmitting}
               className="flex-1"
             >
-              <Upload size={18} />
-              Add GIF
+              {isSubmitting ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Upload size={18} />
+              )}
+              {isSubmitting ? 'Adding...' : 'Add GIF'}
             </Button>
           </div>
         </div>

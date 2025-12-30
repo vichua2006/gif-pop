@@ -23,13 +23,16 @@ export async function saveGifFromPath(sourcePath) {
 export async function saveGifFromDataUrl(dataUrl) {
     const id = randomUUID();
     const destPath = getGifFilePath(id);
-    // Extract base64 data from data URL
-    const matches = dataUrl.match(/^data:image\/\w+;base64,(.+)$/);
+    // Extract base64 data from data URL - more permissive regex
+    // Matches: data:image/gif;base64,... or data:image/png;base64,... etc.
+    const matches = dataUrl.match(/^data:[^;]+;base64,(.+)$/);
     if (!matches) {
+        console.error('Invalid data URL format. URL starts with:', dataUrl.substring(0, 50));
         throw new Error('Invalid data URL format');
     }
     const buffer = Buffer.from(matches[1], 'base64');
     await fs.writeFile(destPath, buffer);
+    console.log('GIF saved to:', destPath);
     return id;
 }
 export async function deleteGifFile(id) {
@@ -57,5 +60,7 @@ export async function gifFileExists(id) {
 export function getGifFileUrl(id) {
     const filePath = getGifFilePath(id);
     // Return file:// URL for Electron to load
-    return `file://${filePath}`;
+    // On Windows, paths are like C:\Users\... and need to be file:///C:/Users/...
+    const normalizedPath = filePath.replace(/\\/g, '/');
+    return `file:///${normalizedPath}`;
 }

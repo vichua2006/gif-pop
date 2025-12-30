@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { GifItem } from '@/types/gif';
+import type { GifItemWithTags } from '../../electron/types';
 import { Trash2, Copy, Check, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
 interface GifCardProps {
-  gif: GifItem;
+  gif: GifItemWithTags;
   onRemove: (id: string) => void;
   onUpdateName: (id: string, name: string) => void;
 }
@@ -18,16 +18,31 @@ export function GifCard({ gif, onRemove, onUpdateName }: GifCardProps) {
 
   const handleCopy = async () => {
     try {
-      // Copy the image data to clipboard
-      const response = await fetch(gif.dataUrl);
-      const blob = await response.blob();
-      await navigator.clipboard.write([
-        new ClipboardItem({ [blob.type]: blob }),
-      ]);
-      setCopied(true);
-      toast.success('Copied to clipboard!');
-      setTimeout(() => setCopied(false), 2000);
+      // Use native Electron clipboard for better GIF support
+      if (window.api?.copyGifToClipboard) {
+        const result = await window.api.copyGifToClipboard(gif.id);
+        setCopied(true);
+        if (result.method === 'file') {
+          toast.success('GIF copied! Paste anywhere.');
+        } else if (result.method === 'image') {
+          toast.success('Copied as image!');
+        } else {
+          toast.success('Copied file path!');
+        }
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        // Fallback for non-Electron: use web clipboard API
+        const response = await fetch(gif.filePath);
+        const blob = await response.blob();
+        await navigator.clipboard.write([
+          new ClipboardItem({ [blob.type]: blob }),
+        ]);
+        setCopied(true);
+        toast.success('Copied to clipboard!');
+        setTimeout(() => setCopied(false), 2000);
+      }
     } catch (err) {
+      console.error('Copy failed:', err);
       // Fallback: copy name
       await navigator.clipboard.writeText(gif.name);
       toast.info('Copied name to clipboard');
@@ -48,7 +63,7 @@ export function GifCard({ gif, onRemove, onUpdateName }: GifCardProps) {
       {/* Image */}
       <div className="aspect-square p-3 flex items-center justify-center bg-muted/30">
         <img
-          src={gif.dataUrl}
+          src={gif.filePath}
           alt={gif.name}
           className="max-w-full max-h-full object-contain"
         />
