@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { GifItemWithTags } from '../../electron/types';
 import { Search } from 'lucide-react';
-import { toast } from 'sonner';
 
 export default function SearchPopupPage() {
   const [query, setQuery] = useState('');
@@ -10,6 +9,23 @@ export default function SearchPopupPage() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Make body and html transparent for popup
+  useEffect(() => {
+    document.body.style.backgroundColor = 'transparent';
+    document.documentElement.style.backgroundColor = 'transparent';
+    const root = document.getElementById('root');
+    if (root) {
+      root.style.backgroundColor = 'transparent';
+    }
+    return () => {
+      document.body.style.backgroundColor = '';
+      document.documentElement.style.backgroundColor = '';
+      if (root) {
+        root.style.backgroundColor = '';
+      }
+    };
+  }, []);
 
   // Load GIFs on mount
   useEffect(() => {
@@ -51,13 +67,11 @@ export default function SearchPopupPage() {
     try {
       if (window.api?.copyGifToClipboard) {
         await window.api.copyGifToClipboard(gif.id);
-        toast.success(`${gif.name} copied!`);
-        // Close window after short delay to show toast
-        setTimeout(closePopup, 500);
+        closePopup();
       }
     } catch (err) {
       console.error('Copy failed:', err);
-      toast.error('Failed to copy');
+      closePopup();
     }
   };
 
