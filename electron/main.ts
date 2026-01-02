@@ -165,6 +165,12 @@ async function initialize() {
     const win = BrowserWindow.fromWebContents(event.sender);
     win?.close();
   });
+  
+  // App quit handler
+  ipcMain.handle('window:quit', () => {
+    isQuitting = true;
+    app.quit();
+  });
 }
 
 app.whenReady().then(async () => {

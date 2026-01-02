@@ -29,5 +29,6 @@ contextBridge.exposeInMainWorld('api', {
   
   // Window control
   closeWindow: () => ipcRenderer.invoke('window:close'),
+  quitApp: () => ipcRenderer.invoke('window:quit'),
 });
 

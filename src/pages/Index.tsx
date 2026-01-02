@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Command } from 'lucide-react';
+import { Plus, Search, Command, Power } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useElectronGifCollection } from '@/hooks/useElectronGifCollection';
 import { AddGifDialog } from '@/components/AddGifDialog';
@@ -31,14 +31,18 @@ const Index = () => {
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm border-b-[3px] border-border">
         <div className="container max-w-5xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            {/* Demo button to preview Electron popup */}
+            {/* Quit button */}
             <Button
-              variant="accent"
-              onClick={() => setIsSearchOpen(true)}
+              variant="destructive"
+              onClick={() => {
+                if (isElectron && window.api?.quitApp) {
+                  window.api.quitApp();
+                }
+              }}
               className="gap-2"
             >
-              <Command size={18} />
-              Demo Popup
+              <Power size={18} />
+              Quit
             </Button>
 
             <div className="flex items-center gap-2">
