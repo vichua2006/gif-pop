@@ -141,6 +141,12 @@ export function AddGifDialog({ open, onOpenChange, onAdd }: AddGifDialogProps) {
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && name.trim() && preview && !isSubmitting) {
+                  e.preventDefault();
+                  handleSubmit();
+                }
+              }}
               placeholder="e.g., happy dance, thumbs up..."
               className="border-chunky shadow-chunky-sm focus:shadow-chunky"
             />
