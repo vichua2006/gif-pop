@@ -28,6 +28,10 @@ declare global {
       
       // Window control
       closeWindow: () => Promise<void>;
+      minimizeWindow: () => Promise<void>;
+      maximizeWindow: () => Promise<void>;
+      isWindowMaximized: () => Promise<boolean>;
+      quitApp: () => Promise<void>;
     };
   }
 }

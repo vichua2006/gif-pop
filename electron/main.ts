@@ -23,6 +23,7 @@ function createWindow() {
     width: 800,
     height: 600,
     show: false,
+    frame: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -160,10 +161,36 @@ async function initialize() {
   registerGifHandlers(ipcMain);
   registerTagHandlers(ipcMain);
   
-  // Window control handler
+  // Window control handlers
   ipcMain.handle('window:close', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
-    win?.close();
+    if (!win) return;
+    
+    // For main window, hide to tray instead of closing
+    if (win === mainWindow && !isQuitting) {
+      win.hide();
+    } else {
+      win.close();
+    }
+  });
+  
+  ipcMain.handle('window:minimize', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    win?.minimize();
+  });
+  
+  ipcMain.handle('window:maximize', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win?.isMaximized()) {
+      win.unmaximize();
+    } else {
+      win?.maximize();
+    }
+  });
+  
+  ipcMain.handle('window:isMaximized', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    return win?.isMaximized() ?? false;
   });
   
   // App quit handler
@@ -175,6 +202,9 @@ async function initialize() {
 
 app.whenReady().then(async () => {
   try {
+    // Remove menu bar
+    Menu.setApplicationMenu(null);
+    
     await initialize();
     createWindow();
     createTray();

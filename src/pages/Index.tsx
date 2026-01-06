@@ -6,6 +6,7 @@ import { AddGifDialog } from '@/components/AddGifDialog';
 import { GifCard } from '@/components/GifCard';
 import { SearchPopup } from '@/components/SearchPopup';
 import { EmptyState } from '@/components/EmptyState';
+import { TitleBar } from '@/components/TitleBar';
 
 const Index = () => {
   const { gifs, addGif, removeGif, updateGifName, searchGifs, isElectron, isLoading } = useElectronGifCollection();
@@ -27,6 +28,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Custom Title Bar (Electron only) */}
+      <TitleBar />
+      
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm border-b-[3px] border-border">
         <div className="container max-w-5xl mx-auto px-4 py-3">
