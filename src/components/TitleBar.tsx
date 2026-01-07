@@ -42,7 +42,7 @@ export function TitleBar() {
 
   return (
     <div 
-      className="flex items-center justify-between h-8 bg-background border-b-[3px] border-border px-2 select-none"
+      className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between h-8 bg-background border-b-[3px] border-border px-2 select-none"
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     >
       {/* Left side - App title/logo area (draggable) */}

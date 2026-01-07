@@ -32,7 +32,7 @@ const Index = () => {
       <TitleBar />
       
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm border-b-[3px] border-border">
+      <header className="sticky top-8 z-40 bg-background/80 backdrop-blur-sm border-b-[3px] border-border">
         <div className="container max-w-5xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             {/* Quit button */}
