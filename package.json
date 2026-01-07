@@ -101,8 +101,7 @@
     ],
     "win": {
       "target": ["nsis"],
-      "icon": "public/favicon.ico",
-      "signAndEditExecutable": false
+      "icon": "public/favicon.ico"
     },
     "nsis": {
       "oneClick": false,
