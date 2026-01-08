@@ -7,7 +7,7 @@ Collect and save your favourite GIFs to never lose them again! A lightweight Ele
 
 Intended usage in mind was to be able to use [WeChat Stickers](https://sticker.weixin.qq.com/cgi-bin/mmemoticonwebnode-bin/pages/home) in other messaging apps, but feel free to use it for anything you want.
 
-**NOTE: clipboard pasting is currently only supported on Windows**
+**NOTE: clipboard pasting is currently only supported on Windows & macOS**
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/4b1fd44a-ad16-417f-93ac-2e7a97ad2783" />
