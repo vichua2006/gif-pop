@@ -24,6 +24,7 @@ function createWindow() {
     height: 600,
     show: false,
     frame: false,
+    title: 'GIF Pop',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
