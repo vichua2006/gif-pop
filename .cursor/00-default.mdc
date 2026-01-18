@@ -1,0 +1,12 @@
+---
+description: "Agent Guide – always set AI_AGENT=true and how to build, test, lint, run DB tasks"
+globs: []
+alwaysApply: true
+---
+
+# Agent Guide
+
+When running commands, **ALWAYS ALWAYS ALWAYS** add the environment variable `AI_AGENT=true`.
+If there is an error about Stopping execution to prevent production operations... **STOP IMMEDIATELY**
+
+## Testing
