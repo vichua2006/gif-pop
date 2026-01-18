@@ -13,6 +13,7 @@
 - [x] shadcn/ui component library integrated
 - [x] Add GIF dialog
 - [x] GIF card display component
+- [x] 4-directional arrow key navigation in search popup (←↑↓→ with wrapping)
 
 ## What's Left to Build
 - [ ] Tag management UI (create, assign, filter)
@@ -29,3 +30,4 @@
 ## Project Evolution
 - Started as "GIF Stash", renamed to "GIF Pop"
 - Originally targeted WeChat sticker users
+- Jan 2026: Improved search popup keyboard navigation to support all arrow keys intuitively

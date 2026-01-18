@@ -75,15 +75,47 @@ export default function SearchPopupPage() {
     }
   };
 
+  const COLUMNS = 4;
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       closePopup();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      setSelectedIndex((i) => (i >= results.length - 1 ? 0 : i + 1));
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      setSelectedIndex((i) => (i <= 0 ? results.length - 1 : i - 1));
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex((i) => Math.min(i + 1, results.length - 1));
+      setSelectedIndex((i) => {
+        const target = i + COLUMNS;
+        if (target < results.length) {
+          return target;
+        }
+        // Check if already in last row
+        const currentRow = Math.floor(i / COLUMNS);
+        const lastRow = Math.floor((results.length - 1) / COLUMNS);
+        if (currentRow === lastRow) {
+          // Wrap to top (same column)
+          return i % COLUMNS;
+        }
+        // Partial row below, jump to last item
+        return results.length - 1;
+      });
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelectedIndex((i) => Math.max(i - 1, 0));
+      setSelectedIndex((i) => {
+        const target = i - COLUMNS;
+        if (target >= 0) {
+          return target;
+        }
+        // Wrap to bottom (same column or last item if partial)
+        const col = i % COLUMNS;
+        const lastRow = Math.floor((results.length - 1) / COLUMNS);
+        const targetInLastRow = lastRow * COLUMNS + col;
+        return targetInLastRow >= results.length ? results.length - 1 : targetInLastRow;
+      });
     } else if (e.key === 'Enter' && results[selectedIndex]) {
       handleSelect(results[selectedIndex]);
     }
@@ -147,7 +179,7 @@ export default function SearchPopupPage() {
         {/* Footer hint */}
         {results.length > 0 && (
           <div className="px-4 py-2 border-t-[3px] border-border bg-muted/50 text-xs text-muted-foreground flex items-center gap-4">
-            <span>↑↓ Navigate</span>
+            <span>←↑↓→ Navigate</span>
             <span>↵ Copy</span>
             <span>Esc Close</span>
           </div>

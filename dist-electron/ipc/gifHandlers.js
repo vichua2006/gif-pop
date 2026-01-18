@@ -131,7 +131,34 @@ export function registerGifHandlers(ipcMain) {
                     });
                 });
             }
-            // On other platforms, fall back to image copy
+            // On macOS, use AppleScript to copy file to clipboard (like Cmd+C on a file)
+            if (process.platform === 'darwin') {
+                return new Promise((resolve, reject) => {
+                    // AppleScript to copy file reference to clipboard - escapes backslashes and quotes
+                    const escapedPath = filePath.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+                    const script = `set the clipboard to (POSIX file "${escapedPath}")`;
+                    exec(`osascript -e '${script}'`, (error) => {
+                        if (error) {
+                            console.error('AppleScript copy failed:', error);
+                            // Fallback to image copy
+                            const imageBuffer = fs.readFileSync(filePath);
+                            const image = nativeImage.createFromBuffer(imageBuffer);
+                            if (!image.isEmpty()) {
+                                clipboard.writeImage(image);
+                                resolve({ success: true, method: 'image' });
+                            }
+                            else {
+                                reject(error);
+                            }
+                        }
+                        else {
+                            console.log('File copied to clipboard via AppleScript');
+                            resolve({ success: true, method: 'file' });
+                        }
+                    });
+                });
+            }
+            // On Linux/other platforms, fall back to image copy
             const imageBuffer = fs.readFileSync(filePath);
             const image = nativeImage.createFromBuffer(imageBuffer);
             if (!image.isEmpty()) {

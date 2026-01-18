@@ -43,3 +43,11 @@
 - shadcn/ui components in `src/components/ui/`
 - Custom components at `src/components/` level
 - Hooks abstract Electron vs browser differences
+
+### Grid Navigation Pattern
+Search popup uses a 4-column grid with keyboard navigation:
+- `COLUMNS = 4` constant defines grid width
+- Arrow keys move intuitively (←→ horizontal, ↑↓ vertical)
+- Navigation wraps cyclically at boundaries
+- Partial last rows handled by jumping to last item
+- Pattern implemented in both `SearchPopupPage.tsx` and `SearchPopup.tsx`
